@@ -1,0 +1,145 @@
+1/ Tạo deployment webapp
+# kubectl create namespace cau3
+namespace/cau3 created
+# kubectl config set-context --current --namespace=cau3
+Context "kubernetes-admin@kubernetes" modified.
+-------------------------------------------------------
+# vim deploy-webapp.yaml
+-----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  namespace: cau3
+  labels:
+    app: webapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      serviceAccountName: webapp-sa
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+-----
+
+-------------------------------------------------------
+2/ Tạo thêm 1 service account trong deployment deploy-webapp.yaml
+vim deploy-webapp.yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  namespace: cau3
+  labels:
+    app: webapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      serviceAccountName: webapp-sa
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service
+  namespace: cau3
+spec:
+  selector:
+    app: webapp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: webapp-sa
+  namespace: cau3
+---
+# kubectl apply -f deploy-webapp.yaml 
+deployment.apps/webapp created
+service/webapp-service created
+serviceaccount/webapp-sa created
+# kubectl get pod
+NAME                      READY   STATUS    RESTARTS   AGE
+webapp-74847f8cf8-cgxzc   1/1     Running   0          64s
+webapp-74847f8cf8-k4mrh   1/1     Running   0          64s
+
+3/ Phân quyền:
+# vim role-readonly.yaml
+--
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: role-readonly
+  namespace: cau3
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+---
+
+# vim rolebinding-readonly.yaml 
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rolebinding-readonly
+  namespace: cau3
+subjects:
+- kind: ServiceAccount
+  name: webapp-sa
+  namespace: cau3
+roleRef:
+  kind: Role
+  name: role-readonly
+  apiGroup: rbac.authorization.k8s.io
+---
+
+
+
+# kubectl apply -f role-readonly.yaml 
+role.rbac.authorization.k8s.io/role-readonly created
+# kubectl apply -f rolebinding-readonly.yaml 
+rolebinding.rbac.authorization.k8s.io/rolebinding-readonly created
+# kubectl get service -n cau3
+NAME             TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
+webapp-service   ClusterIP   10.96.211.8   <none>        80/TCP    22m
+
+#Kiểm tra quyền đã được cấp:
+
+root@tund-k8s-master-1:/etc/k8s# kubectl auth can-i get deployments --as=system:serviceaccount:cau3:webapp-sa -n cau3
+yes
+root@tund-k8s-master-1:/etc/k8s# kubectl auth can-i list services --as=system:serviceaccount:cau3:webapp-sa -n cau3
+yes
+root@tund-k8s-master-1:/etc/k8s# kubectl auth can-i delete pods --as=system:serviceaccount:cau3:webapp-sa -n cau3
+no
+
+root@tund-k8s-master-1:/etc/k8s# kubectl get rolebinding -n cau3 --output=wide | grep webapp-sa
+rolebinding-readonly   Role/role-readonly   32m                    cau3/webapp-sa
