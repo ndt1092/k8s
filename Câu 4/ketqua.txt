@@ -1,0 +1,46 @@
+** Tạo 1 pod web
+# vim pod-web.yaml
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web
+spec:
+  containers:
+  - name: nginx
+    image: nginx:latest
+    ports:
+    - containerPort: 80
+  nodeSelector:
+    kubernetes.io/hostname: tund-k8s-worker-1
+---
+
+# kubectl apply -f pod-web.yaml 
+pod/web created
+root@tund-k8s-master-1:/etc/k8s# kubectl get pod web -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP            NODE                NOMINATED NODE   READINESS GATES
+web    1/1     Running   0          21s   10.244.1.12   tund-k8s-worker-1   <none>           <none>
+
+root@tund-k8s-master-1:/etc/k8s# kubectl describe pod web
+--
+Name:             web
+Namespace:        cau3
+Priority:         0
+Service Account:  default
+Node:             tund-k8s-worker-1/10.11.10.18
+Start Time:       Sat, 17 May 2025 16:05:13 +0700
+Labels:           <none>
+Annotations:      <none>
+Status:           Running
+IP:               10.244.1.12
+IPs:
+  IP:  10.244.1.12
+  
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  95s   default-scheduler  Successfully assigned cau3/web to tund-k8s-worker-1
+  Normal  Pulling    95s   kubelet            Pulling image "nginx:latest"
+  Normal  Pulled     93s   kubelet            Successfully pulled image "nginx:latest" in 1.968s (1.968s including waiting)
+  Normal  Created    93s   kubelet            Created container: nginx
+  Normal  Started    93s   kubelet            Started container nginx
