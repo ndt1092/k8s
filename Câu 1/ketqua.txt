@@ -1,0 +1,111 @@
+1/ Liệt kê các node của cluster
+NAME                STATUS   ROLES           AGE   VERSION
+tund-k8s-master-1   Ready    control-plane   28d   v1.29.15
+tund-k8s-worker-1   Ready    <none>          27d   v1.29.15
+
+10.11.10.19 tund-k8s-master-1
+10.11.10.18 tund-k8s-worker-1
+
+------------------------------------------------------------------------------------
+
+2/ Tạo deployment.yml 
+# vim deploy-nginx.yaml 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: webserver
+  name: webserver
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: webserver
+  template:
+    metadata:
+      labels:
+        app: webserver
+    spec:
+      containers:
+      - image: nginx:1.19.0
+        name: nginx
+        resources:
+          requests:
+            cpu: "300m"
+          limits:
+            cpu: "500m"
+
+#Apply deployment và kiểm tra trạng thái:
+root@tund-k8s-master-1:/etc/k8s# kubectl apply -f deploy-nginx.yaml 
+deployment.apps/webserver created
+
+root@tund-k8s-master-1:/etc/k8s# kubectl get pod
+NAME                         READY   STATUS    RESTARTS   AGE
+hello-world-pod              1/1     Running   0          27d
+nginx-7854ff8877-jgss9       1/1     Running   0          28d
+webserver-5bf9f86dc7-ghlnm   1/1     Running   0          4m11s
+webserver-5bf9f86dc7-t4r49   1/1     Running   0          4m11s
+
+root@tund-k8s-master-1:/etc/k8s# kubectl describe pod webserver
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  12m   default-scheduler  Successfully assigned default/webserver-5bf9f86dc7-t4r49 to tund-k8s-worker-1
+  Normal  Pulling    12m   kubelet            Pulling image "nginx:1.19.0"
+  Normal  Pulled     12m   kubelet            Successfully pulled image "nginx:1.19.0" in 1.943s (15.948s including waiting)
+  Normal  Created    12m   kubelet            Created container: nginx
+  Normal  Started    12m   kubelet            Started container nginx
+
+------------------------------------------------------------------------------------
+3/ Expose webserver sử dụng một dịch vụ dạng NodePort:
+# vim web-service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-webserver
+  labels:
+    app: webserver
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+    nodePort: 32000
+  selector:
+    app: webserver
+  type: NodePort
+
+## Apply web-service
+# kubectl apply -f web-service.yaml 
+service/service-webserver created
+
+------------------------------------------------------------------------------------
+
+4/ Chạy lệnh curl truy cập vào webserver:
+# curl http://10.11.10.18:32000
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
