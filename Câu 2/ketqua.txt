@@ -1,0 +1,96 @@
+**Tạo namespace cau2
+# kubectl create namespace cau2
+namespace/cau2 created
+-----------------------------------------------------------------------
+**Tạo multi-pob.yaml
+# vim multi-pod.yaml     
+-----------------------------------------------------------------------
+      
+# kubectl apply -f multi-pod.yaml 
+pod/multi-pod created
+# kubectl get pod
+NAME        READY   STATUS    RESTARTS   AGE
+multi-pod   2/2     Running   0          88s
+
+-----------------------------------------------------------------------
+# kubectl describe pod multi-pod
+Name:             multi-pod
+Namespace:        cau2
+Priority:         0
+Service Account:  default
+Node:             tund-k8s-worker-1/10.11.10.18
+Start Time:       Sat, 17 May 2025 15:17:50 +0700
+Labels:           <none>
+Annotations:      <none>
+Status:           Running
+IP:               10.244.1.9
+IPs:
+  IP:  10.244.1.9
+Containers:
+  pod1:
+    Container ID:  containerd://947c67027e94a71b26b658697ecb9f0ef5f2d1ad9c9b4c50c640363d0319e6f7
+    Image:         busybox:1.31.1
+    Image ID:      docker.io/library/busybox@sha256:95cf004f559831017cdf4628aaf1bb30133677be8702a8c5f2994629f637a209
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      /bin/sh
+      -c
+    Args:
+      while true; do date >> /vol/date.log; sleep 5; done
+    State:          Running
+      Started:      Sat, 17 May 2025 15:17:56 +0700
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-ng74l (ro)
+      /vol from vol (rw)
+  pod2:
+    Container ID:   containerd://f92639cd1c689ea76c914a9fcac8794e1c6e82e9fc4479d8261f087c7dfc86e2
+    Image:          nginx:latest
+    Image ID:       docker.io/library/nginx@sha256:c15da6c91de8d2f436196f3a768483ad32c258ed4e1beb3d367a27ed67253e66
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Sat, 17 May 2025 15:18:14 +0700
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /usr/share/nginx/html from vol (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-ng74l (ro)
+  Conditions:
+    Type                        Status
+    PodReadyToStartContainers   True 
+    Initialized                 True 
+    Ready                       True 
+    ContainersReady             True 
+    PodScheduled                True 
+  Volumes:
+    vol:
+      Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+      Medium:     
+      SizeLimit:  <unset>
+    kube-api-access-ng74l:
+      Type:                    Projected (a volume that contains injected data from multiple sources)
+      TokenExpirationSeconds:  3607
+      ConfigMapName:           kube-root-ca.crt
+      ConfigMapOptional:       <nil>
+      DownwardAPI:             true
+  QoS Class:                   BestEffort
+  Node-Selectors:              <none>
+  Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                               node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age    From               Message
+  ----    ------     ----   ----               -------
+  Normal  Scheduled  3m34s  default-scheduler  Successfully assigned cau2/multi-pod to tund-k8s-worker-1
+  Normal  Pulling    3m34s  kubelet            Pulling image "busybox:1.31.1"
+  Normal  Pulled     3m29s  kubelet            Successfully pulled image "busybox:1.31.1" in 5.528s (5.528s including waiting)
+  Normal  Created    3m29s  kubelet            Created container: pod1
+  Normal  Started    3m29s  kubelet            Started container pod1
+  Normal  Pulling    3m29s  kubelet            Pulling image "nginx:latest"
+  Normal  Pulled     3m11s  kubelet            Successfully pulled image "nginx:latest" in 17.711s (17.711s including waiting)
+  Normal  Created    3m11s  kubelet            Created container: pod2
+  Normal  Started    3m11s  kubelet            Started container pod2                           
